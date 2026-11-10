@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moments Virtual Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Saira+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* layout: apparatus bench on the left, instrument sidebar (task, status, results) on the right; stacks below 980px */
+  --ink: #17212b;
+  --muted: #5a6776;
+  --paper: #e9edf1;
+  --panel: #ffffff;
+  --line: #d3dae2;
+  --accent: #1f5fad;
+  --ok: #17803f;
+  --warn: #b45309;
+  --display: "Saira Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+header.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 10px 18px; background: var(--ink); color: #fff;
+}
+header.top h1 { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+header.top .meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #c9d3de; }
+.crit { background: #b45309; color: #fff; font-weight: 700; padding: 3px 10px; border-radius: 6px; font-size: 13px; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 14px; padding: 14px; max-width: 1500px; margin: 0 auto; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.stage { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.stage svg { width: 100%; height: auto; display: block; border-radius: 8px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 2px 4px 4px; }
+.toolbar .group { display: flex; gap: 6px; align-items: center; padding-right: 10px; border-right: 1px solid var(--line); }
+.toolbar .group:last-child { border-right: 0; }
+.toolbar .label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 2px; }
+button {
+  font-family: var(--body); font-size: 14px; font-weight: 600; color: var(--ink);
+  background: #f3f6f9; border: 1px solid #c3ccd6; border-radius: 8px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { background: #e7edf3; }
+button:active { background: #dbe3ec; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: #194f92; }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+label.check { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+aside { display: flex; flex-direction: column; gap: 14px; }
+aside .card { padding: 14px 16px; }
+aside h2 { font-family: var(--display); font-size: 19px; font-weight: 700; margin: 0 0 8px; letter-spacing: 0.01em; }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+ol.steps li { padding-left: 2px; }
+.kit { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+.status { display: grid; gap: 8px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pill { font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.03em; }
+.pill.ok { background: #dcf3e4; color: var(--ok); }
+.pill.no { background: #fdebd8; color: var(--warn); }
+.teacher { display: none; font-family: var(--mono); font-size: 13px; background: #fff8e1; border: 1px dashed #d9b44a; border-radius: 8px; padding: 8px 10px; }
+.teacher.on { display: block; }
+.seg { display: inline-flex; border: 1px solid #c3ccd6; border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 6px 14px; background: #f3f6f9; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+table.results { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+table.results th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 4px 4px 6px; border-bottom: 1px solid var(--line); vertical-align: bottom; }
+table.results td { padding: 3px 4px; border-bottom: 1px solid #edf0f3; }
+table.results td.n { color: var(--muted); font-family: var(--mono); width: 22px; }
+table.results input { width: 100%; font-family: var(--mono); font-size: 14px; padding: 5px 6px; border: 1px solid #c9d2dc; border-radius: 6px; background: #fbfcfd; font-variant-numeric: tabular-nums; }
+table.results input:disabled { color: var(--ink); background: #eef2f6; border-color: #e0e6ec; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.graphwrap { margin-top: 10px; }
+.graphwrap svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: -1px; }
+.note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+.toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.toast.show { opacity: 1; }
+#stage .draggable { cursor: grab; }
+#stage .draggable:active { cursor: grabbing; }
+@media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Virtual lab: the turning effect of a force</h1>
+  <div class="meta"><span>Grade 8 Physics · Lesson 1 · Part A</span><span class="crit">Criterion C i, ii</span></div>
+</header>
+
+<main>
+  <section class="card stage" aria-label="Apparatus">
+    <svg id="stage" viewBox="0 0 1000 640" role="img" aria-label="Centre-zero metre rule resting on a stand at its 0 mark, a newtonmeter clamped at 25 cm on the left and hooked 100 g masses on a clamp on the right">
+      <defs>
+        <linearGradient id="gWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset="1" stop-color="#dfe5eb"/></linearGradient>
+        <linearGradient id="gBench" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b5866"/><stop offset="0.18" stop-color="#3a4552"/><stop offset="1" stop-color="#2a323c"/></linearGradient>
+        <linearGradient id="gWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc93"/><stop offset="0.55" stop-color="#ecc56a"/><stop offset="1" stop-color="#d4a548"/></linearGradient>
+        <linearGradient id="gSteel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7d8792"/><stop offset="0.28" stop-color="#e9edf1"/><stop offset="0.5" stop-color="#b9c2cb"/><stop offset="1" stop-color="#6c7682"/></linearGradient>
+        <linearGradient id="gAlu" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8e99a4"/><stop offset="0.45" stop-color="#e3e8ed"/><stop offset="1" stop-color="#8a95a0"/></linearGradient>
+        <linearGradient id="gBlue" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#14467f"/><stop offset="0.45" stop-color="#2f78c9"/><stop offset="1" stop-color="#163f73"/></linearGradient>
+        <linearGradient id="gGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9f7c8"/><stop offset="1" stop-color="#b9dc6e"/></linearGradient>
+        <linearGradient id="gTube" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cfe0f0" stop-opacity="0.55"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.25"/><stop offset="1" stop-color="#b8cde2" stop-opacity="0.55"/></linearGradient>
+        <filter id="fShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#1b2a3a" flood-opacity="0.22"/></filter>
+        <clipPath id="clipA"><rect x="20" y="34" width="198" height="72" rx="4"/></clipPath>
+        <clipPath id="clipB"><rect x="782" y="34" width="198" height="72" rx="4"/></clipPath>
+      </defs>
+
+      <rect x="0" y="0" width="1000" height="640" fill="url(#gWall)"/>
+      <g id="tiles" opacity="0.35"></g>
+      <!-- bench -->
+      <rect x="0" y="615" width="1000" height="25" fill="url(#gBench)"/>
+      <rect x="0" y="613" width="1000" height="3" fill="#6b7a89"/>
+
+      <!-- stand: blue base, rod and knife-edge pivot at the rule's 0 mark -->
+      <g id="standG">
+        <rect x="438" y="600" width="124" height="15" rx="3" fill="url(#gBlue)"/>
+        <rect x="430" y="609" width="140" height="6" rx="2" fill="#123a66"/>
+        <rect x="495" y="196" width="10" height="406" fill="url(#gBlue)"/>
+        <rect x="487" y="250" width="26" height="14" rx="2" fill="url(#gBlue)"/>
+        <polygon points="500,172 485,198 515,198" fill="#173f6f" stroke="#0f2c4f" stroke-width="1"/>
+        <text x="514" y="236" font-size="13" fill="#3a4654" font-family="IBM Plex Sans, Arial, sans-serif">pivot (knife edge)</text>
+      </g>
+
+      <!-- tray of 100 g masses -->
+      <g id="trayG">
+        <rect x="764" y="598" width="206" height="17" rx="3" fill="#8a6a3a"/>
+        <rect x="764" y="598" width="206" height="4" rx="2" fill="#a8844e"/>
+        <text x="867" y="535" text-anchor="middle" font-size="13" fill="#3a4654" font-family="IBM Plex Sans, Arial, sans-serif">100 g hooked masses</text>
+        <g id="trayMasses"></g>
+      </g>
+
+      <!-- newtonmeter (hangs from the clamp at 25 cm, pulled down by the student) -->
+      <g id="meterG"></g>
+      <!-- chain of masses (hangs from the movable clamp) -->
+      <g id="chainG"></g>
+
+      <!-- the rule, rotates about the knife edge -->
+      <g id="ruleG">
+        <rect x="90" y="150" width="820" height="22" rx="2" fill="url(#gWood)" stroke="#a37b2f" stroke-width="1"/>
+        <g id="ruleTicks"></g>
+        <g id="levelG" transform="translate(560 150)">
+          <rect x="-36" y="-3" width="72" height="3" fill="#2f3a45"/>
+          <rect id="vial" x="-33" y="-16" width="66" height="13" rx="6.5" fill="url(#gGlass)" stroke="#6f8c33" stroke-width="1.2"/>
+          <line x1="-8" y1="-15" x2="-8" y2="-4" stroke="#3d4b1d" stroke-width="1"/>
+          <line x1="8" y1="-15" x2="8" y2="-4" stroke="#3d4b1d" stroke-width="1"/>
+          <ellipse id="bubble" cx="0" cy="-9.5" rx="7" ry="3.6" fill="#fffdf0" opacity="0.95"/>
+        </g>
+        <g id="meterClampG"></g>
+        <g id="clampG" class="draggable" data-drag="clamp" tabindex="0" role="slider" aria-label="Mass clamp position" aria-valuemin="1" aria-valuemax="50"></g>
+      </g>
+
+      <!-- level indicator -->
+      <g id="levelPill" transform="translate(500 30)">
+        <rect id="lpBg" x="-62" y="-15" width="124" height="30" rx="15" fill="#fdebd8"/>
+        <text id="lpTx" x="0" y="5" text-anchor="middle" font-size="14" font-weight="700" fill="#b45309" font-family="IBM Plex Sans, Arial, sans-serif">NOT LEVEL</text>
+      </g>
+
+      <!-- zoom window A: newtonmeter scale -->
+      <g id="zoomA" filter="url(#fShadow)">
+        <rect x="12" y="10" width="214" height="104" rx="9" fill="#fff" stroke="#c4cdd7"/>
+        <text x="22" y="27" font-size="12" font-weight="600" fill="#3a4654" font-family="IBM Plex Sans, Arial, sans-serif">Newtonmeter scale (zoom ×6)</text>
+        <g clip-path="url(#clipA)">
+          <rect x="20" y="34" width="198" height="72" fill="#ffffff"/>
+          <rect x="176" y="34" width="42" height="72" fill="#e8eef4"/>
+          <g id="zAscale"></g>
+          <line x1="60" y1="70" x2="176" y2="70" stroke="#d0021b" stroke-width="2.2"/>
+          <polygon points="176,70 190,62 190,78" fill="#d0021b"/>
+        </g>
+      </g>
+      <!-- zoom window B: rule at the clamp -->
+      <g id="zoomB" filter="url(#fShadow)">
+        <rect x="774" y="10" width="214" height="104" rx="9" fill="#fff" stroke="#c4cdd7"/>
+        <text x="784" y="27" font-size="12" font-weight="600" fill="#3a4654" font-family="IBM Plex Sans, Arial, sans-serif">Rule at the mass clamp (zoom ×4)</text>
+        <g clip-path="url(#clipB)">
+          <rect x="782" y="34" width="198" height="72" fill="#f4f7fa"/>
+          <g id="zBscale"></g>
+          <rect x="848" y="38" width="66" height="64" rx="4" fill="#cfd8e1" fill-opacity="0.22" stroke="#7d8a96" stroke-width="1.2"/>
+          <line x1="881" y1="38" x2="881" y2="102" stroke="#d0021b" stroke-width="2"/>
+        </g>
+      </g>
+
+      <!-- mass being dragged -->
+      <g id="floatG" pointer-events="none"></g>
+    </svg>
+
+    <div class="toolbar">
+      <div class="group"><span class="label">Masses</span>
+        <button id="bAdd" type="button">Add 100 g</button>
+        <button id="bRem" type="button">Remove 100 g</button>
+      </div>
+      <div class="group"><span class="label">Newtonmeter</span>
+        <button id="bPull" type="button">Pull harder</button>
+        <button id="bEase" type="button">Ease off</button>
+      </div>
+      <div class="group">
+        <label class="check"><input id="cZoom" type="checkbox" checked> Zoom windows</label>
+        <button id="bReset" type="button">Reset apparatus</button>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <section class="card" aria-labelledby="hTask">
+      <h2 id="hTask">Task</h2>
+      <p class="kit">This copies our lab kit: a centre-zero metre rule resting on the blue stand at its 0 mark, clamps with hooks, 100 g hooked masses (weight 1 N each) and a 0 to 10 N newtonmeter clamped at 25 cm on the left.</p>
+      <ol class="steps">
+        <li>Drag 100 g masses from the tray onto the hook of the clamp on the right.</li>
+        <li>Drag the clamp along the rule to the distance in the table. Read the distance from the rule.</li>
+        <li>Drag the newtonmeter ring down (or use Pull harder and Ease off) until the rule is level. The bubble sits between the two lines.</li>
+        <li>Read the newtonmeter to the nearest 0.05 N and type it in the table.</li>
+        <li>Repeat for every row, then look at the graph.</li>
+      </ol>
+    </section>
+
+    <section class="card status" aria-labelledby="hStatus">
+      <h2 id="hStatus" style="margin-bottom:0">Apparatus</h2>
+      <div class="row"><span>Masses on the hook</span><strong id="sLoad">1 × 100 g</strong></div>
+      <div class="row"><span>Rule</span><span id="sLevel" class="pill no">NOT LEVEL</span></div>
+      <div id="teacher" class="teacher" aria-live="polite"></div>
+    </section>
+
+    <section class="card" aria-labelledby="hRes">
+      <div class="row"><h2 id="hRes" style="margin:0">Results</h2>
+        <div class="seg" role="group" aria-label="Results view">
+          <button id="vTable" type="button" aria-pressed="true">Table</button>
+          <button id="vGraph" type="button" aria-pressed="false">Graph</button>
+        </div>
+      </div>
+      <div id="tableView">
+        <table class="results">
+          <thead><tr><th></th><th>Force of masses (N)</th><th>Distance from pivot (cm)</th><th>Newtonmeter reading (N)</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div id="graphView" class="graphwrap" hidden>
+        <svg id="graph" viewBox="0 0 340 236" role="img" aria-label="Graph of newtonmeter reading against distance from the pivot"></svg>
+        <div id="legend" class="legend"></div>
+      </div>
+      <div class="actions">
+        <button id="bCopy" type="button" class="primary">Copy results</button>
+        <button id="bClear" type="button">Clear readings</button>
+      </div>
+      <p class="note">Copy your readings into Part A of your worksheet. Rows 6 to 8 are for your own choices.</p>
+    </section>
+  </aside>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('stage');
+  const $ = id => document.getElementById(id);
+  const PX = 500, PY = 172, CM = 8.2;          // pivot point and pixels per cm on the rule
+  const METER_CM = 25;                          // newtonmeter clamp position (left of the pivot)
+  const NPX = 14;                               // newtonmeter scale: pixels per newton
+  const BAND = 0.0125;                          // friction at the knife edge (N m)
+  const TMAX = 4;                               // tilt angle (degrees) when the rule rests on its stop
+  const MAXN = 5;                               // masses in the kit
+  const UNIT = 44;                              // height of one hooked mass (px)
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const teacher = location.hash === '#teacher';
+
+  const S = { d: 10, n: 1, F: 0, th: 0, om: 0, phi: 0, phiV: 0, zoom: true };
+  const DEFAULT_ROWS = [[1, 10], [1, 20], [1, 30], [1, 40], [2, 20], ['', ''], ['', ''], ['', '']];
+  let rows = DEFAULT_ROWS.map(r => ({ f: r[0], d: r[1], r: '' }));
+
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function rot(x, y, deg) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    return [PX + (x - PX) * c - (y - PY) * s, PY + (x - PX) * s + (y - PY) * c];
+  }
+  function pt(evt) {
+    const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  const fmt = (v, dp) => (Math.round(v * Math.pow(10, dp)) / Math.pow(10, dp)).toFixed(dp);
+
+  // ---------- static drawing ----------
+  (function tiles() {
+    const g = $('tiles');
+    for (let x = 0; x <= 1000; x += 50) el('line', { x1: x, y1: 0, x2: x, y2: 612, stroke: '#cfd7df', 'stroke-width': 0.6 }, g);
+    for (let y = 0; y <= 612; y += 50) el('line', { x1: 0, y1: y, x2: 1000, y2: y, stroke: '#cfd7df', 'stroke-width': 0.6 }, g);
+  })();
+
+  (function ruleTicks() {
+    const g = $('ruleTicks');
+    for (let i = 3; i < 820; i += 37) el('line', { x1: 90 + i, y1: 167, x2: 90 + i + 22, y2: 166, stroke: '#c99c45', 'stroke-width': 0.6, opacity: 0.6 }, g);
+    for (let v = -50; v <= 50; v++) {
+      const x = PX + v * CM;
+      const len = v % 10 === 0 ? 11 : v % 5 === 0 ? 8 : 5;
+      el('line', { x1: x, y1: 150, x2: x, y2: 150 + len, stroke: '#1f1a12', 'stroke-width': v % 10 === 0 ? 1.1 : 0.75 }, g);
+      if (v % 5 === 0) {
+        const t = el('text', { x: x, y: 169, 'text-anchor': 'middle', 'font-size': v % 10 === 0 ? 9.5 : 7.5, 'font-weight': v % 10 === 0 ? 700 : 500, fill: '#1f1a12', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g);
+        t.textContent = Math.abs(v);
+      }
+    }
+  })();
+
+  function drawClamp(g, x, withIndex) {
+    const c = el('g', { transform: `translate(${x} 0)` }, g);
+    el('rect', { x: -6, y: 134, width: 12, height: 4, rx: 1, fill: '#3e4852' }, c);
+    el('rect', { x: -3.5, y: 137, width: 7, height: 10, fill: '#59636e' }, c);
+    el('rect', { x: -9, y: 146, width: 18, height: 30, rx: 2, fill: 'url(#gAlu)', stroke: '#6b7782', 'stroke-width': 1 }, c);
+    if (withIndex) el('line', { x1: 0, y1: 147, x2: 0, y2: 175, stroke: '#d0021b', 'stroke-width': 1.3 }, c);
+    el('rect', { x: -1.6, y: 176, width: 3.2, height: 8, fill: '#6b7782' }, c);
+    el('path', { d: 'M0 183 V189 C0 196 -7 196 -7 190', fill: 'none', stroke: '#5d6874', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, c);
+    return c;
+  }
+  drawClamp($('meterClampG'), PX - METER_CM * CM, false);
+  (function massClamp() {
+    const g = $('clampG');
+    el('rect', { x: -16, y: 128, width: 32, height: 70, fill: 'transparent' }, g);   // larger hit area
+    drawClamp(g, 0, true);
+  })();
+
+  function drawMass(g, y0) {
+    el('path', { d: `M0 ${y0 + 12} V${y0 + 6} C0 ${y0 + 0.5} 6.5 ${y0 + 0.5} 6.5 ${y0 + 5}`, fill: 'none', stroke: '#5f6a75', 'stroke-width': 2, 'stroke-linecap': 'round' }, g);
+    el('rect', { x: -2, y: y0 + 10, width: 4, height: 5, fill: '#7d8792' }, g);
+    el('rect', { x: -15, y: y0 + 14, width: 30, height: 27, rx: 2, fill: 'url(#gSteel)', stroke: '#5e6873', 'stroke-width': 0.8 }, g);
+    el('ellipse', { cx: 0, cy: y0 + 14, rx: 15, ry: 3.4, fill: '#e6ebef', stroke: '#6e7883', 'stroke-width': 0.8 }, g);
+    const t = el('text', { x: 0, y: y0 + 32, 'text-anchor': 'middle', 'font-size': 8, 'font-weight': 600, fill: '#3b4651', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g);
+    t.textContent = '100 g';
+    el('circle', { cx: 0, cy: y0 + 45, r: 3, fill: 'none', stroke: '#5f6a75', 'stroke-width': 1.6 }, g);
+  }
+
+  // newtonmeter scale ticks inside the zoom window
+  (function zoomScales() {
+    const a = $('zAscale');
+    for (let i = 0; i <= 100; i++) {
+      const v = i / 10, y = v * 80;
+      const major = i % 10 === 0, half = i % 5 === 0;
+      const len = major ? 30 : half ? 21 : 12;
+      el('line', { x1: 176, y1: y, x2: 176 - len, y2: y, stroke: '#1d2630', 'stroke-width': major ? 2 : half ? 1.6 : 1.1 }, a);
+      if (half) {
+        const t = el('text', { x: 134, y: y + (major ? 6 : 4.5), 'text-anchor': 'end', 'font-size': major ? 18 : 14, 'font-weight': major ? 700 : 500, fill: '#1d2630', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, a);
+        t.textContent = major ? String(v) : v.toFixed(1);
+      }
+    }
+    el('text', { x: 100, y: -14, 'font-size': 12, fill: '#5a6776', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, a).textContent = 'N';
+    const b = $('zBscale');
+    el('rect', { x: -50 * 30 - 6, y: 46, width: 100 * 30 + 12, height: 56, fill: 'url(#gWood)', stroke: '#a37b2f' }, b);
+    for (let v = -50; v <= 50; v++) {
+      const x = v * 30;
+      const len = v % 10 === 0 ? 24 : v % 5 === 0 ? 17 : 11;
+      el('line', { x1: x, y1: 46, x2: x, y2: 46 + len, stroke: '#1f1a12', 'stroke-width': v % 5 === 0 ? 1.8 : 1.2 }, b);
+      const t = el('text', { x: x, y: 94, 'text-anchor': 'middle', 'font-size': v % 5 === 0 ? 16 : 13, 'font-weight': v % 5 === 0 ? 700 : 500, fill: '#1f1a12', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, b);
+      t.textContent = Math.abs(v);
+    }
+  })();
+
+  // ---------- dynamic drawing ----------
+  function buildMeter() {
+    const g = $('meterG');
+    g.innerHTML = '';
+    el('circle', { cx: 0, cy: 4, r: 5, fill: 'none', stroke: '#8a96a3', 'stroke-width': 2 }, g);
+    el('rect', { x: -2, y: 8, width: 4, height: 7, fill: '#8a96a3' }, g);
+    el('rect', { x: -17, y: 14, width: 34, height: 12, rx: 3, fill: 'url(#gBlue)' }, g);
+    el('rect', { x: -16, y: 26, width: 32, height: 172, rx: 2, fill: 'url(#gTube)', stroke: '#93a9bf', 'stroke-width': 1 }, g);
+    el('path', { id: 'spring', d: '', fill: 'none', stroke: '#8c96a0', 'stroke-width': 1.4 }, g);
+    el('rect', { id: 'rod', x: -1.6, y: 36, width: 3.2, height: 190, fill: '#9aa5b0' }, g);
+    el('rect', { x: -15, y: 30, width: 18, height: 164, fill: '#ffffff', stroke: '#c8d2dc', 'stroke-width': 0.5 }, g);
+    for (let i = 0; i <= 100; i++) {
+      const y = 36 + (i / 10) * NPX;
+      const len = i % 10 === 0 ? 9 : i % 5 === 0 ? 6 : 3.5;
+      el('line', { x1: 3, y1: y, x2: 3 - len, y2: y, stroke: '#1d2630', 'stroke-width': i % 10 === 0 ? 0.9 : 0.5 }, g);
+      if (i % 10 === 0) {
+        const t = el('text', { x: -7.5, y: y + 2.6, 'text-anchor': 'end', 'font-size': 7.2, 'font-weight': 600, fill: '#1d2630', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g);
+        t.textContent = i / 10;
+      }
+    }
+    el('text', { x: -6, y: 191, 'text-anchor': 'middle', 'font-size': 6.5, fill: '#5a6776', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g).textContent = 'N';
+    el('rect', { x: -17, y: 198, width: 34, height: 8, rx: 2, fill: 'url(#gBlue)' }, g);
+    el('rect', { id: 'ptr', x: -16, y: 35, width: 32, height: 2, fill: '#d0021b' }, g);
+    el('path', { id: 'hookB', d: '', fill: 'none', stroke: '#5d6874', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, g);
+    const grip = el('g', { id: 'grip', class: 'draggable', 'data-drag': 'meter', tabindex: 0, role: 'slider', 'aria-label': 'Newtonmeter pull. Arrow keys change the pull.' }, g);
+    el('circle', { cx: 0, cy: 0, r: 26, fill: 'transparent' }, grip);
+    el('circle', { cx: 0, cy: 0, r: 13, fill: '#ffffff', stroke: '#1f5fad', 'stroke-width': 3 }, grip);
+    el('path', { d: 'M0 -7 L-4 -2 H4 Z M0 7 L-4 2 H4 Z', fill: '#1f5fad' }, grip);
+    const lab = el('text', { x: -24, y: 110, 'text-anchor': 'end', 'font-size': 13, fill: '#3a4654', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g);
+    lab.textContent = 'newtonmeter';
+    const lab2 = el('text', { x: -24, y: 126, 'text-anchor': 'end', 'font-size': 12, fill: '#5a6776', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g);
+    lab2.textContent = '0 to 10 N';
+    const lab3 = el('text', { id: 'pullLab', x: 22, y: 0, 'font-size': 13, 'font-weight': 600, fill: '#1f5fad', 'font-family': 'IBM Plex Sans, Arial, sans-serif' }, g);
+    lab3.textContent = 'drag to pull';
+  }
+
+  function buildChain() {
+    const g = $('chainG');
+    g.innerHTML = '';
+    for (let i = 0; i < S.n; i++) {
+      const m = el('g', i === S.n - 1 ? { class: 'draggable', 'data-drag': 'chain' } : {}, g);
+      drawMass(m, i * UNIT);
+    }
+  }
+  function buildTray() {
+    const g = $('trayMasses');
+    g.innerHTML = '';
+    const free = MAXN - S.n;
+    for (let i = 0; i < free; i++) {
+      const m = el('g', { class: 'draggable', 'data-drag': 'tray', transform: `translate(${790 + i * 38} 552)` }, g);
+      el('rect', { x: -18, y: -4, width: 36, height: 50, fill: 'transparent' }, m);
+      drawMass(m, 0);
+    }
+  }
+
+  function render() {
+    $('ruleG').setAttribute('transform', `rotate(${S.th.toFixed(3)} ${PX} ${PY})`);
+    const xd = PX + S.d * CM;
+    $('clampG').setAttribute('transform', `translate(${xd} 0)`);
+    $('clampG').setAttribute('aria-valuenow', S.d);
+    $('clampG').setAttribute('aria-valuetext', `${S.d} cm from the pivot`);
+    // newtonmeter
+    const [mx, my] = rot(PX - METER_CM * CM, 192, S.th);
+    $('meterG').setAttribute('transform', `translate(${mx.toFixed(2)} ${(my - 4).toFixed(2)})`);
+    const py = 36 + S.F * NPX;
+    $('ptr').setAttribute('y', (py - 1).toFixed(2));
+    $('rod').setAttribute('y', py.toFixed(2));
+    const rb = py + 190;
+    $('rod').setAttribute('height', 190);
+    $('hookB').setAttribute('d', `M0 ${rb} V${rb + 6} C0 ${rb + 13} 7 ${rb + 13} 7 ${rb + 7}`);
+    $('grip').setAttribute('transform', `translate(0 ${(rb + 26).toFixed(2)})`);
+    $('pullLab').setAttribute('y', (rb + 31).toFixed(2));
+    let sp = 'M6 26';
+    const coils = 16, top = 27, bot = Math.max(py - 2, 30);
+    for (let k = 1; k <= coils; k++) sp += ` L${k % 2 ? 14 : 5} ${(top + (bot - top) * k / coils).toFixed(2)}`;
+    $('spring').setAttribute('d', sp);
+    // chain of masses
+    const [cx, cy] = rot(xd, 192, S.th);
+    $('chainG').setAttribute('transform', `translate(${cx.toFixed(2)} ${(cy - 4).toFixed(2)}) rotate(${S.phi.toFixed(2)})`);
+    // spirit level bubble moves toward the higher end
+    $('bubble').setAttribute('cx', clamp(-S.th * 6, -24, 24).toFixed(2));
+    const level = Math.abs(S.th) < 0.12 && Math.abs(torque()) <= BAND + 1e-9;
+    $('vial').setAttribute('stroke', level ? '#17803f' : '#6f8c33');
+    $('vial').setAttribute('stroke-width', level ? 2.2 : 1.2);
+    $('lpBg').setAttribute('fill', level ? '#dcf3e4' : '#fdebd8');
+    $('lpTx').setAttribute('fill', level ? '#17803f' : '#b45309');
+    $('lpTx').textContent = level ? 'LEVEL' : 'NOT LEVEL';
+    $('sLevel').className = 'pill ' + (level ? 'ok' : 'no');
+    $('sLevel').textContent = level ? 'LEVEL' : 'NOT LEVEL';
+    $('sLoad').textContent = S.n === 0 ? 'none' : `${S.n} × 100 g`;
+    // zoom windows
+    $('zAscale').setAttribute('transform', `translate(0 ${(70 - S.F * 80).toFixed(2)})`);
+    $('zBscale').setAttribute('transform', `translate(${881 - S.d * 30} 0)`);
+    $('grip').setAttribute('aria-valuenow', S.F.toFixed(2));
+    if (teacher) {
+      $('teacher').classList.add('on');
+      $('teacher').textContent = `Teacher view: reading ${S.F.toFixed(2)} N · clamp ${S.d} cm · moment of masses ${(S.n * S.d / 100).toFixed(2)} N m · needed ${(S.n * S.d / 100 / (METER_CM / 100)).toFixed(2)} N`;
+    }
+  }
+
+  // ---------- physics ----------
+  function torque() { return S.n * 1.0 * S.d / 100 - S.F * METER_CM / 100; }   // clockwise positive, N m
+  function target() {
+    const t = torque();
+    if (Math.abs(t) <= BAND + 1e-9) return 0;
+    return t > 0 ? TMAX : -TMAX;
+  }
+  let raf = 0, last = 0, dragging = null;
+  function tick(ts) {
+    const dt = Math.min(0.033, last ? (ts - last) / 1000 : 0.016);
+    last = ts;
+    const tg = target();
+    if (reduced) { S.th = tg; S.om = 0; S.phi = 0; S.phiV = 0; }
+    else {
+      const acc = 70 * (tg - S.th) - 11 * S.om;
+      S.om += acc * dt; S.th += S.om * dt;
+      const pacc = -38 * S.phi - 2.6 * S.phiV;
+      S.phiV += pacc * dt; S.phi = clamp(S.phi + S.phiV * dt, -14, 14);
+    }
+    render();
+    const settled = Math.abs(tg - S.th) < 0.002 && Math.abs(S.om) < 0.01 && Math.abs(S.phi) < 0.02 && Math.abs(S.phiV) < 0.05;
+    if (settled && !dragging) { S.th = tg; S.om = 0; S.phi = 0; S.phiV = 0; render(); raf = 0; last = 0; return; }
+    raf = requestAnimationFrame(tick);
+  }
+  function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(tick); } }
+
+  function setF(v) { S.F = clamp(Math.round(v * 100) / 100, 0, 10); kick(); save(); }
+  function setD(v) {
+    const nd = clamp(Math.round(v), 1, 50);
+    if (nd !== S.d) { S.phiV += -(nd - S.d) * CM * 1.1; S.d = nd; kick(); save(); }
+  }
+  function setN(v) {
+    const nn = clamp(v, 0, MAXN);
+    if (nn !== S.n) { S.n = nn; buildChain(); buildTray(); S.phiV += 6; kick(); save(); }
+  }
+
+  // ---------- pointer interaction ----------
+  let lastP = null;
+  svg.addEventListener('pointerdown', e => {
+    const t = e.target.closest('[data-drag]');
+    if (!t) return;
+    e.preventDefault();
+    const kind = t.getAttribute('data-drag');
+    const p = pt(e);
+    if (kind === 'tray' && S.n >= MAXN) return;
+    if (kind === 'chain') { if (S.n === 0) return; setN(S.n - 1); buildTrayWithout(); }
+    if (kind === 'tray') { buildTrayWithout(); }
+    dragging = kind; lastP = p;
+    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    if (kind === 'tray' || kind === 'chain') showFloat(p);
+    kick();
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const p = pt(e);
+    if (dragging === 'clamp') {
+      const local = rot(p.x, p.y, -S.th);
+      setD((local[0] - PX) / CM);
+    } else if (dragging === 'meter') {
+      setF(S.F + (p.y - lastP.y) / NPX);
+    } else {
+      showFloat(p);
+    }
+    lastP = p;
+  });
+  function endDrag(e) {
+    if (!dragging) return;
+    const p = e && e.clientX !== undefined ? pt(e) : lastP;
+    if (dragging === 'tray' || dragging === 'chain') {
+      const [cx, cy] = rot(PX + S.d * CM, 192, S.th);
+      const bottom = { x: cx, y: cy + S.n * UNIT };
+      const near = Math.hypot(p.x - bottom.x, p.y - bottom.y) < 95 || Math.hypot(p.x - cx, p.y - cy) < 70;
+      $('floatG').innerHTML = '';
+      if (near && S.n < MAXN) setN(S.n + 1); else { buildTray(); }
+    }
+    dragging = null;
+    kick();
+  }
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+  function showFloat(p) {
+    const g = $('floatG'); g.innerHTML = '';
+    const m = el('g', { transform: `translate(${p.x.toFixed(1)} ${(p.y - 24).toFixed(1)})` }, g);
+    drawMass(m, 0);
+  }
+  function buildTrayWithout() {
+    const g = $('trayMasses'); g.innerHTML = '';
+    const free = MAXN - S.n - 1;
+    for (let i = 0; i < free; i++) {
+      const m = el('g', { class: 'draggable', 'data-drag': 'tray', transform: `translate(${790 + i * 38} 552)` }, g);
+      el('rect', { x: -18, y: -4, width: 36, height: 50, fill: 'transparent' }, m);
+      drawMass(m, 0);
+    }
+  }
+
+  // ---------- keyboard and buttons ----------
+  $('clampG').addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { setD(S.d - 1); e.preventDefault(); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { setD(S.d + 1); e.preventDefault(); }
+  });
+  svg.addEventListener('keydown', e => {
+    if (!e.target.closest || !e.target.closest('#grip')) return;
+    if (e.key === 'ArrowDown') { setF(S.F + 0.05); e.preventDefault(); }
+    if (e.key === 'ArrowUp') { setF(S.F - 0.05); e.preventDefault(); }
+  });
+  function repeatButton(btn, fn) {
+    let t1 = 0, t2 = 0;
+    const stop = () => { clearTimeout(t1); clearInterval(t2); };
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); fn(); t1 = setTimeout(() => { t2 = setInterval(fn, 70); }, 380); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+    btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
+  }
+  repeatButton($('bPull'), () => setF(S.F + 0.05));
+  repeatButton($('bEase'), () => setF(S.F - 0.05));
+  $('bAdd').addEventListener('click', () => setN(S.n + 1));
+  $('bRem').addEventListener('click', () => setN(S.n - 1));
+  $('bReset').addEventListener('click', () => { S.d = 10; S.F = 0; setN(1); S.n = 1; buildChain(); buildTray(); kick(); save(); });
+  $('cZoom').addEventListener('change', e => {
+    S.zoom = e.target.checked;
+    $('zoomA').style.display = S.zoom ? '' : 'none';
+    $('zoomB').style.display = S.zoom ? '' : 'none';
+  });
+
+  // ---------- results ----------
+  const COLORS = { 1: '#1f5fad', 2: '#e36c09', 3: '#17803f', 4: '#7030a0', 5: '#c00000' };
+  function buildRows() {
+    const tb = $('rows'); tb.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      const fixed = i < 5;
+      tr.innerHTML = `<td class="n">${i + 1}</td>` +
+        `<td><input id="r${i}f" inputmode="decimal" aria-label="Row ${i + 1} force" value="${esc(r.f)}" ${fixed ? 'disabled' : ''}></td>` +
+        `<td><input id="r${i}d" inputmode="decimal" aria-label="Row ${i + 1} distance" value="${esc(r.d)}" ${fixed ? 'disabled' : ''}></td>` +
+        `<td><input id="r${i}r" inputmode="decimal" aria-label="Row ${i + 1} newtonmeter reading" value="${esc(r.r)}" placeholder="type"></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
+      const m = inp.id.match(/^r(\d+)([fdr])$/);
+      rows[+m[1]][m[2]] = inp.value.trim();
+      save(); drawGraph();
+    }));
+  }
+  function esc(v) { return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function num(v) { const x = parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : null; }
+  function drawGraph() {
+    const g = $('graph'); g.innerHTML = '';
+    const X0 = 50, X1 = 326, Y0 = 196, Y1 = 14;
+    const xs = v => X0 + (v / 50) * (X1 - X0), ys = v => Y0 - (v / 10) * (Y0 - Y1);
+    for (let v = 0; v <= 50; v += 10) {
+      el('line', { x1: xs(v), y1: Y1, x2: xs(v), y2: Y0, stroke: '#e6ebf0' }, g);
+      const t = el('text', { x: xs(v), y: Y0 + 15, 'text-anchor': 'middle', 'font-size': 11, fill: '#5a6776' }, g); t.textContent = v;
+    }
+    for (let v = 0; v <= 10; v += 2) {
+      el('line', { x1: X0, y1: ys(v), x2: X1, y2: ys(v), stroke: '#e6ebf0' }, g);
+      const t = el('text', { x: X0 - 7, y: ys(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#5a6776' }, g); t.textContent = v;
+    }
+    el('line', { x1: X0, y1: Y0, x2: X1, y2: Y0, stroke: '#5a6776' }, g);
+    el('line', { x1: X0, y1: Y0, x2: X0, y2: Y1, stroke: '#5a6776' }, g);
+    el('text', { x: (X0 + X1) / 2, y: 230, 'text-anchor': 'middle', 'font-size': 12, fill: '#17212b' }, g).textContent = 'Distance from pivot / cm';
+    el('text', { x: 14, y: (Y0 + Y1) / 2, 'text-anchor': 'middle', 'font-size': 12, fill: '#17212b', transform: `rotate(-90 14 ${(Y0 + Y1) / 2})` }, g).textContent = 'Newtonmeter reading / N';
+    const used = new Set();
+    rows.forEach(r => {
+      const f = num(r.f), d = num(r.d), rd = num(r.r);
+      if (f === null || d === null || rd === null) return;
+      const c = COLORS[Math.round(f)] || '#17212b';
+      used.add(Math.round(f));
+      el('circle', { cx: xs(clamp(d, 0, 50)), cy: ys(clamp(rd, 0, 10)), r: 5, fill: c, stroke: '#fff', 'stroke-width': 1.5 }, g);
+    });
+    const lg = $('legend'); lg.innerHTML = '';
+    [...used].sort().forEach(f => { const s = document.createElement('span'); s.style.setProperty('--c', COLORS[f] || '#17212b'); s.textContent = `${f} N of masses`; lg.appendChild(s); });
+    if (!used.size) lg.textContent = 'Your points appear here when you type readings.';
+  }
+  function setView(graph) {
+    $('vTable').setAttribute('aria-pressed', String(!graph));
+    $('vGraph').setAttribute('aria-pressed', String(graph));
+    $('tableView').hidden = graph; $('graphView').hidden = !graph;
+    if (graph) drawGraph();
+  }
+  $('vTable').addEventListener('click', () => setView(false));
+  $('vGraph').addEventListener('click', () => setView(true));
+  $('bClear').addEventListener('click', () => { rows.forEach((r, i) => { r.r = ''; if (i >= 5) { r.f = ''; r.d = ''; } }); buildRows(); drawGraph(); save(); toast('Readings cleared'); });
+  $('bCopy').addEventListener('click', async () => {
+    const lines = ['Force of masses (N)\tDistance from pivot (cm)\tNewtonmeter reading (N)'];
+    rows.forEach(r => { if (r.f !== '' || r.d !== '' || r.r !== '') lines.push(`${r.f}\t${r.d}\t${r.r}`); });
+    try { await navigator.clipboard.writeText(lines.join('\n')); toast('Results copied'); }
+    catch (_) { toast('Copy is blocked here. Type the values into your worksheet.'); }
+  });
+  let tt = 0;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200); }
+
+  // ---------- state ----------
+  function snapshot() { return { d: S.d, n: S.n, F: S.F, rows }; }
+  function save() { try { localStorage.setItem('moments-vlab', JSON.stringify(snapshot())); } catch (_) {} }
+  function load(data) {
+    let d = data && Object.keys(data).length ? data : null;
+    if (!d) { try { d = JSON.parse(localStorage.getItem('moments-vlab') || 'null'); } catch (_) { d = null; } }
+    if (d) {
+      if (Number.isFinite(d.d)) S.d = clamp(d.d, 1, 50);
+      if (Number.isFinite(d.n)) S.n = clamp(d.n, 0, MAXN);
+      if (Number.isFinite(d.F)) S.F = clamp(d.F, 0, 10);
+      if (Array.isArray(d.rows) && d.rows.length === rows.length) rows = d.rows.map((r, i) => ({ f: i < 5 ? DEFAULT_ROWS[i][0] : (r.f ?? ''), d: i < 5 ? DEFAULT_ROWS[i][1] : (r.d ?? ''), r: r.r ?? '' }));
+    }
+  }
+  function start(data) {
+    load(data);
+    buildMeter(); buildChain(); buildTray(); buildRows(); drawGraph();
+    S.th = target(); render();
+  }
+  if (window.claude?.hot?.snapshot) window.claude.hot.snapshot(snapshot);
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>
